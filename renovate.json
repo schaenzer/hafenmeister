@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "timezone": "Europe/Berlin",
+  "semanticCommits": "enabled",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dashboard",
+  "rebaseWhen": "auto",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "suppressNotifications": [
+    "prIgnoreNotification"
+  ],
+  "separateMajorMinor": false,
+  "enabledManagers": ["poetry"],
+  "packageRules": [
+   {
+     "matchManagers": ["poetry"],
+     "matchUpdateTypes": ["major", "minor", "patch"],
+     "groupName": "python dependencies"
+   }
+  ]
+}
