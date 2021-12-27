@@ -1,0 +1,13 @@
+{{- if eq (include "hafenmeister.staticfiles.enabled" . ) "true" }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "hafenmeister.staticfiles.fullname" . }}
+
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.staticfiles" . | nindent 10 }}
+{{- end }}
