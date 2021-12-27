@@ -49,6 +49,12 @@ jobs:
       - name: Install age
         run: curl -Lo /tmp/age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.0.0/age-v1.0.0-linux-amd64.tar.gz && tar xfvz /tmp/age.tar.gz -C /tmp && sudo install /tmp/age/age /usr/local/bin/
 
+      - name: Install helm
+        run: curl -Lo /tmp/helm.tar.gz https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz && tar xfvz /tmp/helm.tar.gz -C /tmp && sudo install /tmp/linux-amd64/helm /usr/local/bin/
+
+      - name: Install helm-secrets
+        run: helm plugin install https://github.com/jkroepke/helm-secrets --version v3.11.0
+
       - name: Download Skaffold Images Artifact
         uses: actions/download-artifact@v2
         with:
