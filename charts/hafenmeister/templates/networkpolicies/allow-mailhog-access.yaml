@@ -1,0 +1,28 @@
+{{- if .Values.global.networkPolicy.create }}
+{{- if eq (include "hafenmeister.mailhog.enabled" . ) "true" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hafenmeister.networkPolicy.mailhog.allowAccess" . }}
+  labels:
+{{ include "hafenmeister.labels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.mailhog" . | nindent 6 }}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          needs-mailhog-access: "yes"
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: {{ .Release.Namespace }}
+    ports:
+    - port: {{ .Values.component.mailhog.service.port }}
+      protocol: TCP
+  policyTypes:
+  - Ingress
+{{- end }}
+{{- end }}

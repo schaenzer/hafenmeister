@@ -1,0 +1,108 @@
+---
+apiVersion: skaffold/v2beta26
+kind: Config
+metadata:
+  name: hafenmeister
+
+build:
+  artifacts:
+    - image: harbor.modac.cloud/hafenmeister/django
+      context: .
+      docker:
+        dockerfile: compose/django/Dockerfile
+    - image: harbor.modac.cloud/hafenmeister/staticfiles
+      context: .
+      docker:
+        dockerfile: compose/staticfiles/Dockerfile
+      requires:
+        - image: harbor.modac.cloud/hafenmeister/django
+          alias: DJANGO_IMAGE
+
+profiles:
+  - name: production
+    activation:
+    - env: SKAFFOLD_PROFILE=production
+    deploy:
+      statusCheck: false
+      helm:
+        releases:
+          - name: production
+            namespace: hafenmeister
+            chartPath: charts/hafenmeister
+            useHelmSecrets: true
+            valuesFiles:
+              - ./deployment/production/values.yaml
+              - ./deployment/production/secrets.yaml
+            artifactOverrides:
+              global:
+                images:
+                  django: harbor.modac.cloud/hafenmeister/django
+                  staticfiles: harbor.modac.cloud/hafenmeister/staticfiles
+  - name: staging
+    activation:
+      - env: SKAFFOLD_PROFILE=staging
+    deploy:
+      statusCheck: false
+      helm:
+        releases:
+          - name: '{{ .RELEASE_NAME }}'
+            namespace: '{{ .RELEASE_NAMESPACE }}'
+            chartPath: charts/hafenmeister
+            useHelmSecrets: true
+            setValueTemplates:
+              ingress:
+                host: '{{ .RELEASE_HOSTNAME }}'
+                tls[0].secretName: 'tls-{{ .RELEASE_HOSTNAME }}'
+                tls[0].hosts[0]: '{{ .RELEASE_HOSTNAME }}'
+            valuesFiles:
+              - ./deployment/staging/values.yaml
+              - ./deployment/staging/secrets.yaml
+            artifactOverrides:
+              global:
+                images:
+                  django: harbor.modac.cloud/hafenmeister/django
+                  staticfiles: harbor.modac.cloud/hafenmeister/staticfiles
+  - name: development
+    activation:
+      - command: dev
+    build:
+      local:
+        push: false
+      artifacts:
+        - image: harbor.modac.cloud/hafenmeister/django
+          context: .
+          docker:
+            dockerfile: compose/django/Dockerfile
+            buildArgs:
+              DEV: 'true'
+          sync:
+            infer:
+              - 'app/**/*.py'
+              - 'app/**/*.html'
+              - 'app/**/*.css'
+              - 'app/**/*.js'
+    deploy:
+      kubeContext: kind-kind
+      statusCheck: false
+      helm:
+        releases:
+          - name: development
+            namespace: hafenmeister
+            chartPath: charts/hafenmeister
+            createNamespace: true
+            useHelmSecrets: true
+            valuesFiles:
+              - ./deployment/development/values.yaml
+              - ./deployment/development/secrets.yaml
+            artifactOverrides:
+              global:
+                images:
+                  django: harbor.modac.cloud/hafenmeister/django
+
+portForward:
+  - resourceType: service
+    resourceName: hafenmeister-development-django
+    port: 8000
+  - resourceType: service
+    resourceName: hafenmeister-development-mailhog
+    port: 8025

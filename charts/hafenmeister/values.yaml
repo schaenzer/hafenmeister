@@ -1,0 +1,364 @@
+# Default values for django.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+releaseType: production
+
+global:
+  images:
+    django: harbor.modac.cloud/hafenmeister/django
+    staticfiles: harbor.modac.cloud/hafenmeister/staticfiles
+
+  imageConfig:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+
+  configs: {}
+  secrets: {}
+
+  networkPolicy:
+    create: true
+
+    allowAccessFrom: []
+    allowMetricAccessFrom: []
+    allowPsqlAccessFrom: []
+
+component:
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+
+    imageConfig:
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+
+    updateStrategy: {}
+    #  rollingUpdate:
+    #    maxUnavailable: 1
+    #  type: RollingUpdate
+
+    replicaCount: 0
+
+    resources: {}
+
+    podSecurityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    podAnnotations: {}
+
+    service:
+      type: ClusterIP
+      http:
+        port: 8025
+      smtp:
+        port: 1025
+
+  postgresql:
+    numberOfInstances: 2
+    enableLogicalBackup: true
+
+    annotations:
+      "helm.sh/resource-policy": keep
+
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 250m
+        memory: 1Gi
+
+    volume:
+      size: 20Gi
+
+    serviceMonitor:
+      enabled: true
+
+    wal_backup:
+      aws_access_key_id: ""
+      aws_secret_access_key: ""
+      aws_endpoint: https://s3.eu-central-1.wasabisys.com
+
+  rabbitmq:
+    replicaCount: 3
+    resources: {}
+    persistence:
+      size: 10Gi
+      storageClass: null
+
+    affinity: null
+
+  staticfiles:
+    # image: harbor.modac.cloud/hafenmeister/staticfiles
+
+    imageConfig:
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+
+    updateStrategy: {}
+    #  rollingUpdate:
+    #    maxUnavailable: 1
+    #  type: RollingUpdate
+
+    replicaCount: 1
+
+    resources:
+      # limits:
+      #   cpu: 300m
+      #   memory: 400Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+
+    podSecurityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    podAnnotations: {}
+
+    service:
+      type: ClusterIP
+      port: 8080
+
+  django:
+    # image: harbor.modac.cloud/hafenmeister/django
+
+    imageConfig:
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+
+    updateStrategy: {}
+    #  rollingUpdate:
+    #    maxUnavailable: 1
+    #  type: RollingUpdate
+
+    args:
+      - /gunicorn
+
+    replicaCount: 1
+
+    resources:
+      # limits:
+      #   cpu: 600m
+      #   memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 300Mi
+
+    podSecurityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    podAnnotations: {}
+
+    service:
+      type: ClusterIP
+      port: 8000
+
+  celerybeat:
+    # image: harbor.modac.cloud/hafenmeister/django
+
+    imageConfig:
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+
+    updateStrategy:
+      type: Recreate
+
+    args:
+      - /celerybeat
+
+    replicaCount: 0
+
+    resources:
+      # limits:
+      #   cpu: 300m
+      #   memory: 600Mi
+      requests:
+        cpu: 150m
+        memory: 300Mi
+
+
+    podSecurityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    podAnnotations: {}
+
+  celeryworker:
+    # image: harbor.modac.cloud/hafenmeister/django
+
+    imageConfig:
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+
+    updateStrategy: {}
+    #  rollingUpdate:
+    #    maxUnavailable: 1
+    #  type: RollingUpdate
+
+    args:
+      - /celeryworker
+
+    replicaCount: 0
+
+    resources:
+      # limits:
+      #   cpu: 600m
+      #   memory: 1600Mi
+      requests:
+        cpu: 200m
+        memory: 800Mi
+
+    podSecurityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    podAnnotations: {}
+
+  celeryflower:
+    # image: harbor.modac.cloud/hafenmeister/django
+
+    imageConfig:
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+
+    updateStrategy:
+      type: Recreate
+
+    args:
+      - /celeryflower
+
+    replicaCount: 0
+
+    resources:
+      # limits:
+      #   cpu: 300m
+      #   memory: 600Mi
+      requests:
+        cpu: 150m
+        memory: 300Mi
+
+    podSecurityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+    podAnnotations: {}
+
+    serviceMonitor:
+        enabled: true
+
+    service:
+      type: ClusterIP
+      port: 5555
+
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  host: chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local

@@ -1,0 +1,20 @@
+{{- if .Values.global.networkPolicy.create }}
+{{- if eq (include "hafenmeister.mailhog.enabled" . ) "true" }}
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ include "hafenmeister.networkPolicy.mailhog.allowFromExternal" . }}
+  labels:
+{{ include "hafenmeister.labels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.mailhog" . | nindent 6 }}
+  ingress:
+  - from: {{ toYaml .Values.global.networkPolicy.allowAccessFrom | nindent 6 }}
+    ports:
+    - protocol: TCP
+      port: {{ .Values.component.mailhog.service.port }}
+{{- end }}
+{{- end }}

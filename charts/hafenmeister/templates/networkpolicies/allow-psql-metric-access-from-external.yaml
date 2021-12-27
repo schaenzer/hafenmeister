@@ -1,0 +1,22 @@
+{{- if .Values.global.networkPolicy.create }}
+{{- if .Values.component.postgresql.serviceMonitor.enabled }}
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ include "hafenmeister.networkPolicy.postgresql.allowMetricFromExternal" . }}
+  labels:
+{{ include "hafenmeister.labels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      application: spilo
+      cluster-name: {{ include "hafenmeister.postgresql.fullname" . }}
+      team: {{ include "hafenmeister.fullname" . }}
+  ingress:
+  - from: {{ toYaml .Values.global.networkPolicy.allowMetricAccessFrom | nindent 6 }}
+    ports:
+    - protocol: TCP
+      port: 9187
+{{- end }}
+{{- end }}

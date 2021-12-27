@@ -1,0 +1,33 @@
+---
+apiVersion: acid.zalan.do/v1
+kind: postgresql
+metadata:
+  name: {{ include "hafenmeister.postgresql.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.postgresql" . | nindent 4 }}
+{{- if .Values.component.postgresql.annotations }}
+  annotations: {{ toYaml .Values.component.postgresql.annotations | nindent 4 }}
+{{- end }}
+spec:
+  teamId: {{ include "hafenmeister.fullname" . }}
+
+  users:
+    django: []
+  databases:
+    django: django
+  enableLogicalBackup: {{ .Values.component.postgresql.enableLogicalBackup }}
+  numberOfInstances: {{ .Values.component.postgresql.numberOfInstances }}
+  postgresql:
+    version: "12"
+    parameters:
+      hot_standby_feedback: "on"
+  resources:
+    {{- toYaml .Values.component.postgresql.resources | nindent 4 }}
+
+  volume:
+    {{- toYaml .Values.component.postgresql.volume | nindent 4 }}
+
+  {{- if .Values.component.postgresql.clone }}
+  clone: {{ toYaml .Values.component.postgresql.clone | nindent 4 }}
+    timestamp: {{ dateInZone "2006-01-02T15:04:05+00:00" (now) "UTC" }}
+  {{- end }}

@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled -}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ template "hafenmeister.fullname" . }}
+  labels:
+{{ include "hafenmeister.labels" . | indent 4 }}
+{{- if .Values.ingress.annotations }}
+  annotations: {{ toYaml .Values.ingress.annotations | nindent 4 }}
+{{- end }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /static/
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "hafenmeister.staticfiles.fullname" $ }}
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "hafenmeister.django.fullname" . }}
+                port:
+                  number: {{ .Values.component.django.service.port }}
+{{- if .Values.ingress.tls }}
+  tls: {{ toYaml .Values.ingress.tls | nindent 4 }}
+{{- end }}
+{{- end }}

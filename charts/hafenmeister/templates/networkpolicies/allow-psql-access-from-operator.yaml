@@ -1,0 +1,20 @@
+{{- if .Values.global.networkPolicy.create }}
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ include "hafenmeister.networkPolicy.postgresql.allowFromOperator" . }}
+  labels:
+{{ include "hafenmeister.labels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      application: spilo
+      cluster-name: {{ include "hafenmeister.postgresql.fullname" . }}
+      team: {{ include "hafenmeister.fullname" . }}
+  ingress:
+  - from: {{ toYaml .Values.global.networkPolicy.allowPsqlAccessFrom | nindent 6 }}
+    ports:
+    - protocol: TCP
+      port: 5432
+{{- end }}

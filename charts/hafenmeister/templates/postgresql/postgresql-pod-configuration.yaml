@@ -1,0 +1,15 @@
+{{- if .Values.component.postgresql.enableLogicalBackup }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+    name: postgresql-pod-configuration
+stringData:
+    AWS_ACCESS_KEY_ID: {{ .Values.component.postgresql.wal_backup.aws_access_key_id }}
+    AWS_SECRET_ACCESS_KEY: {{ .Values.component.postgresql.wal_backup.aws_secret_access_key }}
+    AWS_ENDPOINT: {{ .Values.component.postgresql.wal_backup.aws_endpoint }}
+    AWS_S3_FORCE_PATH_STYLE: "true"
+    USE_WALG_BACKUP: "true"
+    USE_WALG_RESTORE: "true"
+    CLONE_USE_WALG_RESTORE: "true"
+{{- end }}

@@ -1,0 +1,20 @@
+{{- if eq (include "hafenmeister.celeryflower.enabled" . ) "true" }}
+{{- if .Values.component.celeryflower.serviceMonitor.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hafenmeister.celeryflower.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.celeryflower" . | nindent 4 }}
+spec:
+  type: {{ .Values.component.celeryflower.service.type }}
+  ports:
+    - port: {{ .Values.component.celeryflower.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "hafenmeister.selectorLabels.celeryflower" . | nindent 4 }}
+{{- end }}
+{{- end }}

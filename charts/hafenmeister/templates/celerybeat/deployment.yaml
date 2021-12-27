@@ -1,0 +1,96 @@
+{{- if eq (include "hafenmeister.celerybeat.enabled" . ) "true" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hafenmeister.celerybeat.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.celerybeat" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.component.celerybeat.replicaCount }}
+  strategy:
+    {{ toYaml .Values.component.celerybeat.updateStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.celerybeat" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.component.celerybeat.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hafenmeister.selectorLabels.celerybeat" . | nindent 8 }}
+        needs-rabbitmq-access: "yes"
+    spec:
+      {{- with (default .Values.component.celerybeat.imageConfig.pullSecrets .Values.global.imageConfig.pullSecrets ) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hafenmeister.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.component.celerybeat.podSecurityContext | nindent 8 }}
+      containers:
+        - name: celerybeat
+          securityContext:
+            {{- toYaml .Values.component.celerybeat.securityContext | nindent 12 }}
+          image: "{{ if hasKey .Values.component.celerybeat "image" }}{{ .Values.component.celerybeat.image }}{{ else }}{{ .Values.global.images.django }}{{ end }}"
+          imagePullPolicy: {{ .Values.component.celerybeat.imageConfig.pullPolicy }}
+          args:
+            {{- toYaml .Values.component.celerybeat.args | nindent 12 }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+            - name: google-service-account
+              mountPath: "/etc/secrets"
+              readOnly: true
+          env: {{ include "hafenmeister.pod_environment" . | nindent 10 }}
+          envFrom:
+            - secretRef:
+                name: {{ template "hafenmeister.fullname" . }}
+            - configMapRef:
+                name: {{ template "hafenmeister.fullname" . }}
+          # livenessProbe:
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 10
+          #   timeoutSeconds: 5
+          #   failureThreshold: 3
+          #   exec:
+          #     command:
+          #       - /venv/bin/python
+          #       - /health.py
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c","kill -s SIGTERM $(pidof python)"]
+          resources:
+            {{- toYaml .Values.component.celerybeat.resources | nindent 12 }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        - name: google-service-account
+          secret:
+            secretName: {{ template "hafenmeister.google_service_account.fullname" . }}
+            items:
+            - key: GOOGLE_SERVICE_ACCOUNT
+              path: google-service-account
+      {{- with .Values.component.celerybeat.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.celerybeat.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.celerybeat.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "hafenmeister.selectorLabels.celerybeat" . | nindent 14 }}
+{{- end }}

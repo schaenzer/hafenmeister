@@ -1,0 +1,102 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hafenmeister.django.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.django" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.component.django.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.django" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.component.django.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hafenmeister.selectorLabels.django" . | nindent 8 }}
+        needs-mailhog-access: "yes"
+        needs-psql-access: "yes"
+        needs-rabbitmq-access: "yes"
+    spec:
+      {{- with (default .Values.component.django.imageConfig.pullSecrets .Values.global.imageConfig.pullSecrets ) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hafenmeister.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.component.django.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: run-database-migrations
+          securityContext:
+            {{- toYaml .Values.component.django.securityContext | nindent 12 }}
+          image: "{{ if hasKey .Values.component.django "image" }}{{ .Values.component.django.image }}{{ else }}{{ .Values.global.images.django }}{{ end }}"
+          imagePullPolicy: {{ .Values.component.django.imageConfig.pullPolicy }}
+          env: {{ include "hafenmeister.pod_environment" . | nindent 10 }}
+          envFrom:
+            - secretRef:
+                name: {{ template "hafenmeister.fullname" . }}
+            - configMapRef:
+                name: {{ template "hafenmeister.fullname" . }}
+          args:
+            - /migrate
+      containers:
+        - name: django
+          securityContext:
+            {{- toYaml .Values.component.django.securityContext | nindent 12 }}
+          image: "{{ if hasKey .Values.component.django "image" }}{{ .Values.component.django.image }}{{ else }}{{ .Values.global.images.django }}{{ end }}"
+          imagePullPolicy: {{ .Values.component.django.imageConfig.pullPolicy }}
+          args:
+            {{- toYaml .Values.component.django.args | nindent 12 }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+          env: {{ include "hafenmeister.pod_environment" . | nindent 10 }}
+          envFrom:
+            - secretRef:
+                name: {{ template "hafenmeister.fullname" . }}
+            - configMapRef:
+                name: {{ template "hafenmeister.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /healthz/
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /healthz/
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c","kill -s SIGTERM $(pidof python)"]
+          resources:
+            {{- toYaml .Values.component.django.resources | nindent 12 }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+      {{- with .Values.component.django.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.django.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.django.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "hafenmeister.selectorLabels.django" . | nindent 14 }}

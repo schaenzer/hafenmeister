@@ -1,0 +1,26 @@
+{{- if .Values.global.networkPolicy.create }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hafenmeister.networkPolicy.rabbitmq.allowAccess" . }}
+  labels:
+{{ include "hafenmeister.labels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "hafenmeister.rabbitmq.fullname" . }}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          needs-rabbitmq-access: "yes"
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: {{ .Release.Namespace }}
+    ports:
+    - port: 5672
+      protocol: TCP
+  policyTypes:
+  - Ingress
+{{- end }}

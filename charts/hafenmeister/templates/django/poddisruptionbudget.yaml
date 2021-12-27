@@ -1,0 +1,11 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "hafenmeister.django.fullname" . }}
+
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.django" . | nindent 10 }}

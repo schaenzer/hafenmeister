@@ -1,0 +1,70 @@
+---
+global:
+  configs:
+    DEPLOYMENT_ENVIROMENT: production
+    DJANGO_SETTINGS_MODULE: config.settings.production
+    DJANGO_ACCOUNT_ALLOW_REGISTRATION: "True"
+
+  networkPolicy:
+    create: false
+
+    allowAccessFrom:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+
+    allowMetricAccessFrom:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring-system
+
+    allowPsqlAccessFrom:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: postgres-operator
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: postgres-system
+
+component:
+  django:
+    replicaCount: 3
+
+  staticfiles:
+    replicaCount: 3
+
+  rabbitmq:
+    replicaCount: 3
+
+  postgresql:
+    enableLogicalBackup: true
+    numberOfInstances: 2
+
+    serviceMonitor:
+      enabled: true
+
+  celerybeat:
+    replicaCount: 1
+
+  celeryworker:
+    replicaCount: 3
+
+  celeryflower:
+    replicaCount: 1
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+  host: app.hafenmeister.io
+  tls:
+    - secretName: tls-app.hafenmeister.io
+      hosts:
+        - app.hafenmeister.io

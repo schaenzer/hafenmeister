@@ -1,0 +1,73 @@
+{{- if eq (include "hafenmeister.mailhog.enabled" . ) "true" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hafenmeister.mailhog.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.mailhog" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.component.mailhog.replicaCount }}
+  strategy:
+    {{ toYaml .Values.component.mailhog.updateStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.mailhog" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.component.mailhog.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hafenmeister.selectorLabels.mailhog" . | nindent 8 }}
+    spec:
+      {{- with .Values.component.mailhog.imageConfig.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hafenmeister.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.component.mailhog.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mailhog
+          securityContext:
+            {{- toYaml .Values.component.mailhog.securityContext | nindent 12 }}
+          image: "{{ .Values.component.mailhog.image }}"
+          imagePullPolicy: {{ .Values.component.mailhog.imageConfig.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 8025
+              protocol: TCP
+            - name: smtp
+              containerPort: 1025
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+          resources:
+            {{- toYaml .Values.component.mailhog.resources | nindent 12 }}
+      {{- with .Values.component.mailhog.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.mailhog.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.mailhog.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "hafenmeister.selectorLabels.mailhog" . | nindent 14 }}
+{{- end }}

@@ -1,0 +1,52 @@
+---
+global:
+  configs:
+    DEPLOYMENT_ENVIROMENT: development
+    DJANGO_SETTINGS_MODULE: config.settings.local
+    DJANGO_ACCOUNT_ALLOW_REGISTRATION: "True"
+
+component:
+  mailhog:
+    replicaCount: 1
+
+  django:
+    args:
+      - /runserver
+    replicaCount: 1
+    securityContext:
+      readOnlyRootFilesystem: false
+
+  staticfiles:
+    replicaCount: 0
+    securityContext:
+      readOnlyRootFilesystem: false
+
+  rabbitmq:
+    replicaCount: 1
+
+  postgresql:
+    enableLogicalBackup: false
+    numberOfInstances: 1
+
+    annotations: null # Disable helm.sh/resource-policy: keep
+
+    serviceMonitor:
+      enabled: false
+
+  celerybeat:
+    replicaCount: 0
+    securityContext:
+      readOnlyRootFilesystem: false
+
+  celeryworker:
+    replicaCount: 0
+    securityContext:
+      readOnlyRootFilesystem: false
+
+  celeryflower:
+    replicaCount: 0
+    securityContext:
+      readOnlyRootFilesystem: false
+
+  elasticsearch:
+    replicaCount: 0

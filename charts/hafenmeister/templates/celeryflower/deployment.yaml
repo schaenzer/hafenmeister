@@ -1,0 +1,90 @@
+{{- if eq (include "hafenmeister.celeryflower.enabled" . ) "true" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hafenmeister.celeryflower.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.celeryflower" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.component.celeryflower.replicaCount }}
+  strategy:
+    {{ toYaml .Values.component.celeryflower.updateStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.celeryflower" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.component.celeryflower.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hafenmeister.selectorLabels.celeryflower" . | nindent 8 }}
+        needs-rabbitmq-access: "yes"
+    spec:
+      {{- with (default .Values.component.celeryflower.imageConfig.pullSecrets .Values.global.imageConfig.pullSecrets ) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hafenmeister.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.component.celeryflower.podSecurityContext | nindent 8 }}
+      containers:
+        - name: celeryflower
+          securityContext:
+            {{- toYaml .Values.component.celeryflower.securityContext | nindent 12 }}
+          image: "{{ if hasKey .Values.component.celeryflower "image" }}{{ .Values.component.celeryflower.image }}{{ else }}{{ .Values.global.images.django }}{{ end }}"
+          imagePullPolicy: {{ .Values.component.celeryflower.imageConfig.pullPolicy }}
+          args:
+            {{- toYaml .Values.component.celeryflower.args | nindent 12 }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+          ports:
+            - name: http
+              containerPort: 5555
+              protocol: TCP
+          env: {{ include "hafenmeister.pod_environment" . | nindent 10 }}
+          envFrom:
+            - secretRef:
+                name: {{ template "hafenmeister.fullname" . }}
+            - configMapRef:
+                name: {{ template "hafenmeister.fullname" . }}
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /healthcheck
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /healthcheck
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c","kill -s SIGTERM $(pidof python)"]
+          resources:
+            {{- toYaml .Values.component.celeryflower.resources | nindent 12 }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+      {{- with .Values.component.celeryflower.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.celeryflower.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.celeryflower.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "hafenmeister.selectorLabels.celeryflower" . | nindent 14 }}
+{{- end }}

@@ -1,0 +1,33 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ template "hafenmeister.rabbitmq.fullname" . }}
+spec:
+  replicas: {{ .Values.component.rabbitmq.replicaCount }}
+  resources: {{ toYaml .Values.component.rabbitmq.resources | nindent 4 }}
+  rabbitmq:
+    additionalPlugins:
+      - rabbitmq_management
+    additionalConfig: |
+      cluster_partition_handling = pause_minority
+      vm_memory_high_watermark_paging_ratio = 0.99
+  persistence:
+    storage: {{ .Values.component.rabbitmq.persistence.size }}
+    {{- if .Values.component.rabbitmq.persistence.storageClass }}
+    storageClassName: {{ .Values.component.rabbitmq.persistence.storageClass }}
+    {{- end }}
+
+  override:
+      statefulSet:
+        spec:
+          template:
+            spec:
+              containers: []
+              topologySpreadConstraints:
+                - maxSkew: 1
+                  topologyKey: kubernetes.io/hostname
+                  whenUnsatisfiable: DoNotSchedule
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: {{ template "hafenmeister.rabbitmq.fullname" . }}

@@ -1,0 +1,100 @@
+{{- if eq (include "hafenmeister.celeryworker.enabled" . ) "true" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hafenmeister.celeryworker.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.celeryworker" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.component.celeryworker.replicaCount }}
+  strategy:
+    {{ toYaml .Values.component.celeryworker.updateStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.celeryworker" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.component.celeryworker.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hafenmeister.selectorLabels.celeryworker" . | nindent 8 }}
+        needs-elasticsearch-access: "yes"
+        needs-gotenberg-access: "yes"
+        needs-mailhog-access: "yes"
+        needs-psql-access: "yes"
+        needs-rabbitmq-access: "yes"
+    spec:
+      {{- with (default .Values.component.celeryworker.imageConfig.pullSecrets .Values.global.imageConfig.pullSecrets ) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "hafenmeister.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.component.celeryworker.podSecurityContext | nindent 8 }}
+      containers:
+        - name: celeryworker
+          securityContext:
+            {{- toYaml .Values.component.celeryworker.securityContext | nindent 12 }}
+          image: "{{ if hasKey .Values.component.celeryworker "image" }}{{ .Values.component.celeryworker.image }}{{ else }}{{ .Values.global.images.django }}{{ end }}"
+          imagePullPolicy: {{ .Values.component.celeryworker.imageConfig.pullPolicy }}
+          args:
+            {{- toYaml .Values.component.celeryworker.args | nindent 12 }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+            - name: google-service-account
+              mountPath: "/etc/secrets"
+              readOnly: true
+          env: {{ include "hafenmeister.pod_environment" . | nindent 10 }}
+          envFrom:
+            - secretRef:
+                name: {{ template "hafenmeister.fullname" . }}
+            - configMapRef:
+                name: {{ template "hafenmeister.fullname" . }}
+          # livenessProbe:
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 10
+          #   timeoutSeconds: 5
+          #   failureThreshold: 3
+          #   exec:
+          #     command:
+          #       - /venv/bin/python
+          #       - /health.py
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c","kill -s SIGTERM $(pidof python)"]
+          resources:
+            {{- toYaml .Values.component.celeryworker.resources | nindent 12 }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        - name: google-service-account
+          secret:
+            secretName: {{ template "hafenmeister.google_service_account.fullname" . }}
+            items:
+            - key: GOOGLE_SERVICE_ACCOUNT
+              path: google-service-account
+      {{- with .Values.component.celeryworker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.celeryworker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.component.celeryworker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "hafenmeister.selectorLabels.celeryworker" . | nindent 14 }}
+{{- end }}

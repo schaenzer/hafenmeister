@@ -1,0 +1,23 @@
+{{- if eq (include "hafenmeister.celeryflower.enabled" . ) "true" }}
+{{- if .Values.component.celeryflower.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "hafenmeister.celeryflower.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.celeryflower" . | nindent 4 }}
+spec:
+  endpoints:
+  - interval: 30s
+    port: http
+    path: /metrics
+  namespaceSelector:
+    any: true
+  targetLabels:
+    - "app.kubernetes.io/instance"
+  selector:
+    matchLabels:
+      {{- include "hafenmeister.selectorLabels.celeryflower" . | nindent 8 }}
+{{- end }}
+{{- end }}

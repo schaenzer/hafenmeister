@@ -1,0 +1,22 @@
+{{- if eq (include "hafenmeister.mailhog.enabled" . ) "true" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hafenmeister.mailhog.fullname" . }}
+  labels:
+    {{- include "hafenmeister.labels.mailhog" . | nindent 4 }}
+spec:
+  type: {{ .Values.component.mailhog.service.type }}
+  ports:
+    - port: {{ .Values.component.mailhog.service.http.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.component.mailhog.service.smtp.port }}
+      targetPort: smtp
+      protocol: TCP
+      name: smtp
+  selector:
+    {{- include "hafenmeister.selectorLabels.mailhog" . | nindent 4 }}
+{{- end }}
