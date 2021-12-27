@@ -6,8 +6,6 @@ on: [push]
 env:
   HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
   HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-  # KUBERNETES_API_SERVER: https://35.234.111.254
-  # KUBERNETES_CA: ${{ secrets.KUBERNETES_CA }}
 
 jobs:
   build:
@@ -33,24 +31,26 @@ jobs:
           path: skaffold-images.json
 
 
-  # deploy_to_production:
-  #   name: Deploy to Production
-  #   needs: Build
-  #   if: github.ref == 'refs/heads/master'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v2
+  deploy_to_production:
+    name: Deploy to Production
+    needs: Build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
 
-  #     - name: Download Skaffold Images Artifact
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: skaffold-images
+      - name: Download Skaffold Images Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: skaffold-images
 
-  #     - name: Authenticate with Docker registry
-  #       run: echo $HARBOR_PASSWORD | docker login harbor.modac.cloud -u $HARBOR_USERNAME --password-stdin
+      - name: Authenticate with Docker registry
+        run: echo $HARBOR_PASSWORD | docker login harbor.modac.cloud -u $HARBOR_USERNAME --password-stdin
 
-  #     - name: Run skaffold deploy (production)
-  #       run: chmod +x ./skaffold_wrapper.sh && ./skaffold_wrapper.sh -p production skaffold deploy --build-artifacts=skaffold-images.json
-  #       env:
-  #         KUBERNETES_TOKEN: ${{ secrets.KUBERNETES_TOKEN_PRODUCTION }}
+      - name: Run skaffold deploy (production)
+        run: chmod +x ./skaffold_wrapper.sh && ./skaffold_wrapper.sh -p production skaffold deploy --build-artifacts=skaffold-images.json
+        env:
+          KUBERNETES_TOKEN: ${{ secrets.KUBERNETES_TOKEN_PRODUCTION }}
+          KUBERNETES_API_SERVER: ${{ secrets.KUBERNETES_API_SERVER }}
+          KUBERNETES_CA: ${{ secrets.KUBERNETES_CA }}
