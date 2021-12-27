@@ -55,6 +55,11 @@ jobs:
       - name: Install helm-secrets
         run: helm plugin install https://github.com/jkroepke/helm-secrets --version v3.11.0
 
+      - name: Write age key file
+        run:  mkdir -p $HOME/.config/sops/age && echo $AGE_KEY | base64 -d >  $HOME/.config/sops/age/keys.txt
+        env:
+          AGE_KEY: ${{ secrets.AGE_KEY }}
+
       - name: Download Skaffold Images Artifact
         uses: actions/download-artifact@v2
         with:
