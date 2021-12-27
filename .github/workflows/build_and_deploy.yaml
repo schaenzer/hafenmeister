@@ -40,6 +40,12 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
 
+      - name: Install sops and age
+        run: sudo apt-get install -y sops age
+
+      - name: Install skaffold
+        run: curl -Lo /tmp/skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install /tmp/skaffold /usr/local/bin/
+
       - name: Download Skaffold Images Artifact
         uses: actions/download-artifact@v2
         with:
