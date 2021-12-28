@@ -4,4 +4,4 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-celery -A taskapp flower -l INFO -s /tmp/celeryflower
+exec celery -A config.celery_app flower -l INFO -s /tmp/celeryworker
