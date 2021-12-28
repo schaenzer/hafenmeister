@@ -19,7 +19,7 @@ def random_string():
 
 class FluxClusterModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(_('name'), max_length=254, blank=True)
+    name = models.CharField(_('name'), max_length=254)
     token_str = models.CharField(_('token'), max_length=50, editable=False, default=random_string)
 
 
@@ -36,6 +36,52 @@ class FluxClusterModel(models.Model):
     # def get_absolute_url(self):
     #     return reverse("FluxClusterModel_detail", kwargs={"pk": self.pk})
 
+
+class FluxObjectNamespaceModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cluster = models.ForeignKey(FluxClusterModel, on_delete=models.CASCADE, related_name='object_namespaces', verbose_name=_('cluster'))
+    name = models.CharField(_('name'), max_length=254)
+
+    def __str__(self):
+        return self.name
+    class Meta:
+        unique_together = ('cluster', 'name',)
+
+
+class FluxObjectKindModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cluster = models.ForeignKey(FluxClusterModel, on_delete=models.CASCADE, related_name='object_kinds', verbose_name=_('cluster'))
+    name = models.CharField(_('name'), max_length=254)
+
+    def __str__(self):
+        return self.name
+    class Meta:
+        unique_together = ('cluster', 'name',)
+
+
+class FluxObjectApiVersionModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cluster = models.ForeignKey(FluxClusterModel, on_delete=models.CASCADE, related_name='object_api_versions', verbose_name=_('cluster'))
+    name = models.CharField(_('name'), max_length=254)
+
+    def __str__(self):
+        return self.name
+    class Meta:
+        unique_together = ('cluster', 'name',)
+
+
+class FluxObjectModel(models.Model):
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cluster = models.ForeignKey(FluxClusterModel, on_delete=models.CASCADE, related_name='flux_objects', verbose_name=_('cluster'))
+    object_uid = models.UUIDField(_('uid'))
+    object_kind = models.ForeignKey(FluxObjectKindModel, on_delete=models.CASCADE, related_name='flux_objects', verbose_name=_('kind'))
+    object_name = models.CharField(_('name'), max_length=254)
+    object_namespace = models.ForeignKey(FluxObjectNamespaceModel, on_delete=models.CASCADE, related_name='flux_objects', verbose_name=_('namespace'))
+    object_apiVersion = models.ForeignKey(FluxObjectApiVersionModel, on_delete=models.CASCADE, related_name='flux_objects', verbose_name=_('api version'))
+
+    class Meta:
+        unique_together = ('cluster', 'object_uid',)
 
 
 class FluxWebhookTransactionModel(models.Model):
@@ -61,3 +107,35 @@ class FluxWebhookTransactionModel(models.Model):
 
     def __str__(self):
         return self.id
+
+    def process(self):
+
+        flux_object_kind_model, created = FluxObjectKindModel.objects.get_or_create(
+            cluster=self.cluster,
+            name=self.request_body['involvedObject']['kind']
+        )
+
+        flux_object_namespace_model, created = FluxObjectNamespaceModel.objects.get_or_create(
+            cluster=self.cluster,
+            name=self.request_body['involvedObject']['namespace']
+        )
+
+        flux_object_api_version_model, created = FluxObjectApiVersionModel.objects.get_or_create(
+            cluster=self.cluster,
+            name=self.request_body['involvedObject']['apiVersion']
+        )
+
+        flux_object_model, created = FluxObjectModel.objects.update_or_create(
+            cluster=self.cluster, object_uid=self.request_body['involvedObject']['uid'],
+            defaults={
+                'object_kind': flux_object_kind_model,
+                'object_name': self.request_body['involvedObject']['name'],
+                'object_namespace': flux_object_namespace_model,
+                'object_apiVersion': flux_object_api_version_model,
+            },
+        )
+
+        # print(self.request_body['reason'])
+        # print(self.request_body['message'])
+        # print(self.request_body['severity'])
+        # print(self.request_body['timestamp'])
