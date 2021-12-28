@@ -41,9 +41,6 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp-volume
-            - name: google-service-account
-              mountPath: "/etc/secrets"
-              readOnly: true
           env: {{ include "hafenmeister.pod_environment" . | nindent 10 }}
           envFrom:
             - secretRef:
@@ -68,12 +65,6 @@ spec:
       volumes:
         - name: tmp-volume
           emptyDir: {}
-        - name: google-service-account
-          secret:
-            secretName: {{ template "hafenmeister.google_service_account.fullname" . }}
-            items:
-            - key: GOOGLE_SERVICE_ACCOUNT
-              path: google-service-account
       {{- with .Values.component.celerybeat.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
