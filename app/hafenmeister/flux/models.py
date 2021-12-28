@@ -30,6 +30,9 @@ class FluxClusterModel(models.Model):
     def __str__(self):
         return self.name
 
+    def get_inbound_url(self):
+        return reverse("flux:webhook_transaction_receiver", kwargs={'pk': self.pk, 'token': self.token_str})
+
     # def get_absolute_url(self):
     #     return reverse("FluxClusterModel_detail", kwargs={"pk": self.pk})
 

@@ -81,6 +81,7 @@ profiles:
               - 'app/**/*.html'
               - 'app/**/*.css'
               - 'app/**/*.js'
+              - 'app/**/*.yaml'
     deploy:
       kubeContext: kind-kind
       statusCheck: false
