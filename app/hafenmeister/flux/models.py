@@ -1,12 +1,13 @@
+import json
 import secrets
 import string
 import uuid
-import json
 
-from django.db import models
+from django.db import models, transaction
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
+from hafenmeister.flux.signals import queuing_for_processing
 
 class JSONEncoderNotSerializable(json.JSONEncoder):
     def default(self, o):
@@ -24,8 +25,8 @@ class FluxClusterModel(models.Model):
 
 
     class Meta:
-        verbose_name = _("FluxClusterModel")
-        verbose_name_plural = _("FluxClusterModels")
+        verbose_name = _("Cluster")
+        verbose_name_plural = _("Clusters")
 
     def __str__(self):
         return self.name
@@ -81,7 +82,34 @@ class FluxObjectModel(models.Model):
     object_apiVersion = models.ForeignKey(FluxObjectApiVersionModel, on_delete=models.CASCADE, related_name='flux_objects', verbose_name=_('api version'))
 
     class Meta:
+        verbose_name = _("Object")
+        verbose_name_plural = _("Objects")
         unique_together = ('cluster', 'object_uid',)
+
+    def __str__(self):
+        return f'{self.cluster}/{self.object_namespace}/{self.object_name}'
+
+class FluxEventModel(models.Model):
+    class SEVERITY(models.TextChoices):
+        INFO = 'info', _('info')
+        ERROR = 'error', _('error')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    object = models.ForeignKey(FluxObjectModel, on_delete=models.CASCADE, related_name='events', verbose_name=_('object'))
+    reason = models.CharField(_('reason'), max_length=254)
+    message = models.TextField(_('message'))
+    severity = models.CharField(_('severity'), max_length=10, choices=SEVERITY.choices)
+    datetime_timestamp = models.DateTimeField(_('timestamp'))
+
+    associated_transaction = models.OneToOneField('flux.FluxWebhookTransactionModel', on_delete=models.SET_NULL, null=True,  editable=False)
+
+    class Meta:
+        verbose_name = _("Event")
+        verbose_name_plural = _("Events")
+        ordering = ['-datetime_timestamp',]
+
+    def __str__(self):
+        return str(self.pk)
 
 
 class FluxWebhookTransactionModel(models.Model):
@@ -104,12 +132,16 @@ class FluxWebhookTransactionModel(models.Model):
     class Meta:
         verbose_name = _("Webhook Transaction")
         verbose_name_plural = _("Webhook Transactions")
+        ordering = ['-datetime_received',]
 
     def __str__(self):
-        return self.id
+        return str(self.pk)
 
+    def queuing_for_processing(self):
+        queuing_for_processing.send(sender=self.__class__, instance=self)
+
+    @transaction.atomic
     def process(self):
-
         flux_object_kind_model, created = FluxObjectKindModel.objects.get_or_create(
             cluster=self.cluster,
             name=self.request_body['involvedObject']['kind']
@@ -135,7 +167,17 @@ class FluxWebhookTransactionModel(models.Model):
             },
         )
 
-        # print(self.request_body['reason'])
-        # print(self.request_body['message'])
-        # print(self.request_body['severity'])
-        # print(self.request_body['timestamp'])
+        FluxEventModel.objects.update_or_create(
+            associated_transaction=self,
+            defaults= {
+                'object': flux_object_model,
+                'reason': self.request_body['reason'],
+                'message': self.request_body['message'],
+                'severity': self.request_body['severity'],
+                'datetime_timestamp': self.request_body['timestamp']
+            }
+        )
+
+        self.status = self.STATUS.PROCESSED
+        self.datetime_processed = timezone.now()
+        self.save(update_fields=['status', 'datetime_processed'])

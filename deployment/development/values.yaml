@@ -22,13 +22,13 @@ component:
       readOnlyRootFilesystem: false
 
   rabbitmq:
-    replicaCount: 0
+    replicaCount: 1
 
   postgresql:
     enableLogicalBackup: false
     numberOfInstances: 1
 
-    annotations: null # Disable helm.sh/resource-policy: keep
+    # annotations: null # Disable helm.sh/resource-policy: keep
 
     serviceMonitor:
       enabled: false
@@ -39,7 +39,7 @@ component:
       readOnlyRootFilesystem: false
 
   celeryworker:
-    replicaCount: 0
+    replicaCount: 1
     securityContext:
       readOnlyRootFilesystem: false
 

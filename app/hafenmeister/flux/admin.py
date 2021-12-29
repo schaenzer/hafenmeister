@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import FluxClusterModel, FluxWebhookTransactionModel, FluxObjectModel
+from hafenmeister.flux.models import FluxClusterModel, FluxWebhookTransactionModel, FluxObjectModel, FluxEventModel
 from django.utils.html import format_html
 
 @admin.register(FluxClusterModel)
@@ -28,10 +28,16 @@ class FluxWebhookTransactionAdmin(admin.ModelAdmin):
     def process(self, request, queryset):
         del request
         for transactio in queryset:
-            transactio.process()
+            transactio.queuing_for_processing()
 
 
 @admin.register(FluxObjectModel)
 class FluxObjectAdmin(admin.ModelAdmin):
     list_display = ["id", "cluster", "object_uid", "object_namespace", "object_apiVersion", "object_kind", "object_name"]
     list_filter = ['cluster', 'object_kind', 'object_apiVersion']
+
+
+@admin.register(FluxEventModel)
+class FluxEventAdmin(admin.ModelAdmin):
+    list_display = ["id", "object", "datetime_timestamp", "severity", "reason", "message"]
+    list_filter = ['object', 'severity']

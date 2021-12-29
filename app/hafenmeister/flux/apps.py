@@ -8,6 +8,7 @@ class FluxConfig(AppConfig):
 
     def ready(self):
         try:
-            import hafenmeister.users.signals  # noqa F401
+            import hafenmeister.flux.signals  # noqa F401
+            import hafenmeister.flux.tasks  # noqa F401
         except ImportError:
             pass

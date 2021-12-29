@@ -25,11 +25,13 @@ class FluxWebhookTransactionReceiverView(View):
     def post(self, request, pk=None, token=None):
         cluster_model = self.get_cluster_model(pk=pk, token=token)
 
-        FluxWebhookTransactionModel.objects.create(
+        flux_webhook_transaction_model = FluxWebhookTransactionModel.objects.create(
             cluster = cluster_model,
             request_meta = request.META,
             request_body = json.loads(request.body)
         )
+
+        flux_webhook_transaction_model.queuing_for_processing()
 
         return HttpResponse(status=200)
 

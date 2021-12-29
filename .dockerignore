@@ -8,3 +8,9 @@
 .readthedocs.yml
 .travis.yml
 venv
+_tmp
+.github
+.vscode
+charts
+deployment
+.git
