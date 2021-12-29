@@ -31,7 +31,7 @@ class FluxWebhookTransactionReceiverView(View):
             request_body = json.loads(request.body)
         )
 
-        flux_webhook_transaction_model.queuing_for_processing()
+        # flux_webhook_transaction_model.queuing_for_processing()
 
         return HttpResponse(status=200)
 
