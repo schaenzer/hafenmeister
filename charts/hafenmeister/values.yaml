@@ -97,7 +97,7 @@ component:
     replicaCount: 3
     resources:
       limits:
-        cpu: 50m
+        cpu: 500m
         memory: 1024Mi
       requests:
         cpu: 100m
