@@ -1,4 +1,5 @@
 import uuid
+import zoneinfo
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -37,6 +38,7 @@ class UsersUserManager(UserManager):
 
 class UsersUserModel(AbstractUser):
     """Default user for Hafenmeister."""
+    TIMEZONE_CHOICES = ((x, x) for x in sorted(zoneinfo.available_timezones(), key=str.lower))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -45,9 +47,11 @@ class UsersUserModel(AbstractUser):
     email = models.EmailField(_('email address'), max_length=255, unique=True)
 
     #: First and last name do not cover name patterns around the globe
-    name = CharField(_("Name of User"), blank=True, max_length=255)
+    name = CharField(_("name of user"), blank=True, max_length=255)
     first_name = None  # type: ignore
     last_name = None  # type: ignore
+
+    timezone = models.CharField(_("timezone"), choices=TIMEZONE_CHOICES, max_length=50, default='Etc/UTC')
 
     objects = UsersUserManager()
 
