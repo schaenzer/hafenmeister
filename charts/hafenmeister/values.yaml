@@ -95,7 +95,13 @@ component:
 
   rabbitmq:
     replicaCount: 3
-    resources: {}
+    resources:
+      limits:
+        cpu: 50m
+        memory: 1024Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
     persistence:
       size: 10Gi
       storageClass: null
