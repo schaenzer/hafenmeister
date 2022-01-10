@@ -42,13 +42,13 @@ component:
   rabbitmq:
     replicaCount: 3
     persistence:
-      storageClass: longhorn
+      storageClass: local-nvme
 
   postgresql:
     numberOfInstances: 3
 
     volume:
-      storageClass: longhorn
+      storageClass: local-nvme
 
   celerybeat:
     replicaCount: 1
