@@ -34,28 +34,30 @@ global:
 
 component:
   django:
-    replicaCount: 3
+    replicaCount: 0
 
   staticfiles:
-    replicaCount: 3
+    replicaCount: 0
 
   rabbitmq:
     replicaCount: 3
+    persistence:
+      storageClass: longhorn
 
   postgresql:
-    numberOfInstances: 2
+    numberOfInstances: 3
 
-    serviceMonitor:
-      enabled: true
+    volume:
+      storageClass: longhorn
 
   celerybeat:
-    replicaCount: 1
+    replicaCount: 0
 
   celeryworker:
-    replicaCount: 3
+    replicaCount: 0
 
   celeryflower:
-    replicaCount: 1
+    replicaCount: 0
 
 ingress:
   enabled: true
