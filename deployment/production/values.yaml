@@ -34,10 +34,10 @@ global:
 
 component:
   django:
-    replicaCount: 0
+    replicaCount: 3
 
   staticfiles:
-    replicaCount: 0
+    replicaCount: 3
 
   rabbitmq:
     replicaCount: 3
@@ -51,13 +51,13 @@ component:
       storageClass: longhorn
 
   celerybeat:
-    replicaCount: 0
+    replicaCount: 1
 
   celeryworker:
-    replicaCount: 0
+    replicaCount: 3
 
   celeryflower:
-    replicaCount: 0
+    replicaCount: 1
 
 ingress:
   enabled: true
