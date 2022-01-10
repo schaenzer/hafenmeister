@@ -63,7 +63,6 @@ ingress:
   enabled: true
   annotations:
     kubernetes.io/tls-acme: "true"
-    external-dns.alpha.kubernetes.io/target: "nbg1-k3s-alpha.schaenzer.cloud."
   host: app.hafenmeister.io
   tls:
     - secretName: tls-app.hafenmeister.io
