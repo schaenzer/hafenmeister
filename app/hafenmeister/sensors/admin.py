@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from hafenmeister.sensors.models import SensorsWebhookToken, SensorsWebhookTransactionModel
+from hafenmeister.sensors.models import SensorsWebhookToken, SensorsWebhookTransactionModel, SensorsDevice, SensorsMeasurement
 from django.utils.html import format_html
 
 @admin.register(SensorsWebhookToken)
@@ -20,3 +20,13 @@ class FluxWebhookTransactionAdmin(admin.ModelAdmin):
         del request
         for transaction in queryset:
             transaction.queuing_for_processing()
+
+
+@admin.register(SensorsDevice)
+class SensorsDeviceAdmin(admin.ModelAdmin):
+    list_display = ["id", "device_id"]
+
+@admin.register(SensorsMeasurement)
+class SensorsMeasurementAdmin(admin.ModelAdmin):
+    list_display = ["id", "device", "timestemp", "temperature", "humidity", "battery"]
+    list_filter = ['device', 'timestemp']

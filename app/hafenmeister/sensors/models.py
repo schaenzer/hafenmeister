@@ -7,7 +7,7 @@ from django.db import models, transaction
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from hafenmeister.flux.signals import queuing_for_processing
+from hafenmeister.sensors.signals import queuing_for_processing
 
 class JSONEncoderNotSerializable(json.JSONEncoder):
     def default(self, o):
@@ -16,6 +16,22 @@ class JSONEncoderNotSerializable(json.JSONEncoder):
 
 def random_string():
     return ''.join((secrets.choice(string.ascii_letters + string.digits) for i in range(50)))
+
+class SensorsDevice(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device_id = models.CharField(_('device id'), max_length=254, unique=True)
+
+    def __str__(self):
+        return self.device_id
+
+
+class SensorsMeasurement(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey(SensorsDevice, on_delete=models.CASCADE, related_name='sensors_measurements', verbose_name=_('device'))
+    timestemp = models.DateTimeField(_("timestemp"))
+    temperature = models.DecimalField(_("temperature"), max_digits=5, decimal_places=2)
+    humidity = models.DecimalField(_("humidity"), max_digits=5, decimal_places=2)
+    battery = models.DecimalField(_("battery"), max_digits=5, decimal_places=2)
 
 
 class SensorsWebhookToken(models.Model):
@@ -65,4 +81,20 @@ class SensorsWebhookTransactionModel(models.Model):
 
     @transaction.atomic
     def process(self):
-        pass
+        sensors_device_model, created = SensorsDevice.objects.get_or_create(
+            device_id=self.request_body['end_device_ids']['device_id']
+        )
+
+        if self.request_body['uplink_message']['f_port'] == 103:
+
+            SensorsMeasurement.objects.create(
+                device = sensors_device_model,
+                timestemp = self.request_body['uplink_message']['received_at'],
+                temperature = self.request_body['uplink_message']['decoded_payload']['temperature'],
+                humidity = self.request_body['uplink_message']['decoded_payload']['humidity'],
+                battery = self.request_body['uplink_message']['decoded_payload']['battery']
+            )
+
+        self.status = self.STATUS.PROCESSED
+        self.datetime_processed = timezone.now()
+        self.save(update_fields=['status', 'datetime_processed'])
