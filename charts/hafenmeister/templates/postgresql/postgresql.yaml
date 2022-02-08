@@ -13,6 +13,7 @@ spec:
 
   users:
     django: []
+    grafana: []
   databases:
     django: django
   enableLogicalBackup: {{ .Values.component.postgresql.enableLogicalBackup }}
