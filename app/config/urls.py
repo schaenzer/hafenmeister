@@ -24,6 +24,7 @@ urlpatterns = [
     # User management
     path("users/", include("hafenmeister.users.urls", namespace="users")),
     path("flux/", include("hafenmeister.flux.urls", namespace="flux")),
+    path("sensors/", include("hafenmeister.sensors.urls", namespace="sensors")),
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
 ]
